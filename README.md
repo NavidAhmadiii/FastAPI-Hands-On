@@ -5,12 +5,12 @@ Welcome to my FastAPI learning repository! This project contains code examples, 
 ---
 
 ## 📋 Table of Contents  
-- [Prerequisites](##prerequisites)  
-- [Installation](##installation)  
-- [Running the Project](##running-the-project)  
-- [Project Structure](#project-structure)  
-- [Dependencies](#dependencies)  
-- [License](#license)  
+- [Prerequisites](#-prerequisites)  
+- [Installation](#-installation)  
+- [Running the Project](#-running-the-project)  
+- [Project Structure](#-project-structure)  
+- [Dependencies](#-dependencies)  
+- [License](#-license)  
 
 ---
 
