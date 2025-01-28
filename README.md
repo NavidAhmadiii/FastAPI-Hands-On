@@ -1,5 +1,3 @@
----
-
 ```markdown
 # FastAPI Learning Journey 🚀
 
