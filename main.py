@@ -51,3 +51,30 @@ async def get_food(food_name: FoodEnum):
 
     return {"food_name": food_name, "message": "I like chocolate milk"}
 
+
+fake_items_db = [{"items_name": "Foo"}, {"items_name": "Bar"}, {"items_name": "Baz"}, ]
+
+
+@app.get("/items")
+async def list_item(skip: int = 0, limit: int = 10):
+    return fake_items_db[skip:skip + limit]
+
+
+@app.get("/items/{item_id}")
+async def get_item(item_id: str, sample_query_pram, q: str | None = None, short: bool = False):
+    item = {"item_id": item_id, "sample_query_pram": sample_query_pram}
+    if q:
+        item.update({"q": q})
+    if not short:
+        item.update({"descriptions": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer eget."})
+    return item
+
+
+@app.get("/users/{user_id}/items/{item_id}")
+async def get_user(user_id: int, item_id: str, q: str | None = None, short: bool = False):
+    item = {"user_id": user_id, "owner_id": item_id}
+    if q:
+        item.update({"q": q})
+    if not short:
+        item.update({"descriptions": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer eget."})
+    return item
