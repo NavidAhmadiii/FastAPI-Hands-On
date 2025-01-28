@@ -24,7 +24,7 @@ Welcome to my FastAPI learning repository! This project contains code examples, 
 
 1. **Clone the repository:**  
    ```bash
-   git clone https://github.com/NavidAhmadiii/FastAPI-Learning-Journey.git
+   git clone https://github.com/NavidAhmadiii/FastAPI-Hands-On.git
    cd FastAPI-Learning-Journey
    ```
 
