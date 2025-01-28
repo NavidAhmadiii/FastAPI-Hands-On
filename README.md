@@ -1,4 +1,3 @@
-```markdown
 # FastAPI Learning Journey 🚀
 
 Welcome to my FastAPI learning repository! This project contains code examples, exercises, and small projects I’ve built while learning FastAPI. The goal is to explore building fast, modern APIs with Python.
