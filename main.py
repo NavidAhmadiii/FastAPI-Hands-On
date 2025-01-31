@@ -1,5 +1,5 @@
 from enum import Enum
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -56,9 +56,9 @@ async def get_food(food_name: FoodEnum):
 fake_items_db = [{"items_name": "Foo"}, {"items_name": "Bar"}, {"items_name": "Baz"}, ]
 
 
-@app.get("/items")
-async def list_item(skip: int = 0, limit: int = 10):
-    return fake_items_db[skip:skip + limit]
+# @app.get("/items")
+# async def list_item(skip: int = 0, limit: int = 10):
+#     return fake_items_db[skip:skip + limit]
 
 
 @app.get("/items/{item_id}")
@@ -103,3 +103,25 @@ async def create_item_with_put(item_id: int, item: Item, q: str | None = None):
     if q:
         result.update({"q": q})
     return result
+
+
+@app.get("/items")
+async def read_items(q: str | None = Query(
+    None,
+    min_length=3,
+    max_length=10,
+    title='sample  query string',
+    description='this is a sample query',
+    alias='item-query'
+)):
+    result = {"items": [{"item_id": "foo"}, {"item_id": "bar"}]}
+    if q:
+        result.update({"q": q})
+    return result
+
+
+@app.get("/items_hidden")
+async def hidden_query_route(hidden_query: str | None = Query(None, include_in_schema=False)):
+    if hidden_query:
+        return {"hidden_query": hidden_query}
+    return {"hidden_query": "Not found"}
