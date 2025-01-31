@@ -71,7 +71,7 @@ async def get_item(item_id: str, sample_query_pram, q: str | None = None, short:
 
 
 @app.get("/users/{user_id}/items/{item_id}")
-async def get_user(user_id: int, item_id: str, q: str | None = None, short: bool = False):
+async def get_user_item(user_id: int, item_id: str, q: str | None = None, short: bool = False):
     item = {"user_id": user_id, "owner_id": item_id}
     if q:
         item.update({"q": q})
