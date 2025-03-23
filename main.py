@@ -180,44 +180,68 @@ app = FastAPI()
 
 
 # part 9 body - nested field
+# class Image(BaseModel):
+#     url: HttpUrl
+#     name: str
+#
+#
+# class Item(BaseModel):
+#     name: str
+#     description: str | None = None
+#     price: float
+#     tax: float | None = None
+#     tags: set[str] = []
+#     image: list[Image] | None = None
+#
+#
+# class Offer(BaseModel):
+#     name: str
+#     description: str | None = None
+#     price: float
+#     item: list[Item]
+#
+#
+# @app.put("/items/{item_id}")
+# async def update_item(item_id: int, item: Item):
+#     result = {'item_id': item_id, 'item': item}
+#     return result
+#
+#
+# @app.post("/offers")
+# async def create_offer(offer: Offer = Body(..., embed=True)):
+#     return offer
+#
+#
+# @app.post("/images/multiple")
+# async def create_multiple_image(images: list[Image] = Body(..., embed=True)):
+#     return images
+#
+#
+# @app.post("/blah")
+# async def create_some_blahs(blahs: dict[int, float]):
+#     return blahs
 
-class Image(BaseModel):
-    url: HttpUrl
-    name: str
 
+# Part 10: Declare Request Example Data
 
 class Item(BaseModel):
     name: str
     description: str | None = None
     price: float
     tax: float | None = None
-    tags: set[str] = []
-    image: list[Image] | None = None
 
-
-class Offer(BaseModel):
-    name: str
-    description: str | None = None
-    price: float
-    item: list[Item]
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Foo",
+                "description": "A very nice Item.",
+                "price": 16.25,
+                "tax": 1.67,
+            }
+        }
 
 
 @app.put("/items/{item_id}")
 async def update_item(item_id: int, item: Item):
-    result = {'item_id': item_id, 'item': item}
+    result = {"item_id": item_id, "item": item}
     return result
-
-
-@app.post("/offers")
-async def create_offer(offer: Offer = Body(..., embed=True)):
-    return offer
-
-
-@app.post("/images/multiple")
-async def create_multiple_image(images: list[Image] = Body(..., embed=True)):
-    return images
-
-
-@app.post("/blah")
-async def create_some_blahs(blahs: dict[int, float]):
-    return blahs
