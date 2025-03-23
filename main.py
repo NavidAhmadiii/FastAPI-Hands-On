@@ -1,6 +1,8 @@
+from datetime import datetime, time, timedelta
 from enum import Enum
 from fastapi import FastAPI, Query, Path, Body
 from pydantic import BaseModel, Field, HttpUrl
+from uuid import UUID
 
 app = FastAPI()
 
@@ -224,24 +226,42 @@ app = FastAPI()
 
 # Part 10: Declare Request Example Data
 
-class Item(BaseModel):
-    name: str
-    description: str | None = None
-    price: float
-    tax: float | None = None
+# class Item(BaseModel):
+#     name: str
+#     description: str | None = None
+#     price: float
+#     tax: float | None = None
+#
+#     class Config:
+#         json_schema_extra = {
+#             "example": {
+#                 "name": "Foo",
+#                 "description": "A very nice Item.",
+#                 "price": 16.25,
+#                 "tax": 1.67,
+#             }
+#         }
+#
+#
+# @app.put("/items/{item_id}")
+# async def update_item(item_id: int, item: Item):
+#     result = {"item_id": item_id, "item": item}
+#     return result
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "name": "Foo",
-                "description": "A very nice Item.",
-                "price": 16.25,
-                "tax": 1.67,
-            }
-        }
 
-
+#  Part 11: Extra Data Types
 @app.put("/items/{item_id}")
-async def update_item(item_id: int, item: Item):
-    result = {"item_id": item_id, "item": item}
-    return result
+async def read_item(item_id: UUID, start_date: datetime | None = Body(None),
+                    end_time: datetime | None = Body(None),
+                    repeat_at: time | None = Body(None),
+                    process_after: timedelta | None = Body(None)):
+    start_process = start_date + process_after
+    duration = end_time - start_process
+    return {"item_id": item_id,
+            "start_date": start_date,
+            "end_date": end_time,
+            "repeat_at": repeat_at,
+            "process_after": process_after,
+            "start_process": start_process,
+            "duration": duration
+    }
