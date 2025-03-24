@@ -1,6 +1,6 @@
 from datetime import datetime, time, timedelta
 from enum import Enum
-from fastapi import FastAPI, Query, Path, Body
+from fastapi import FastAPI, Query, Path, Body, Cookie, Header
 from pydantic import BaseModel, Field, HttpUrl
 from uuid import UUID
 
@@ -250,18 +250,36 @@ app = FastAPI()
 
 
 #  Part 11: Extra Data Types
-@app.put("/items/{item_id}")
-async def read_item(item_id: UUID, start_date: datetime | None = Body(None),
-                    end_time: datetime | None = Body(None),
-                    repeat_at: time | None = Body(None),
-                    process_after: timedelta | None = Body(None)):
-    start_process = start_date + process_after
-    duration = end_time - start_process
-    return {"item_id": item_id,
-            "start_date": start_date,
-            "end_date": end_time,
-            "repeat_at": repeat_at,
-            "process_after": process_after,
-            "start_process": start_process,
-            "duration": duration
-    }
+# @app.put("/items/{item_id}")
+# async def read_item(item_id: UUID, start_date: datetime | None = Body(None),
+#                     end_time: datetime | None = Body(None),
+#                     repeat_at: time | None = Body(None),
+#                     process_after: timedelta | None = Body(None)):
+#     start_process = start_date + process_after
+#     duration = end_time - start_process
+#     return {"item_id": item_id,
+#             "start_date": start_date,
+#             "end_date": end_time,
+#             "repeat_at": repeat_at,
+#             "process_after": process_after,
+#             "start_process": start_process,
+#             "duration": duration
+#     }
+
+
+# Part 12: Cookie and Header Parameters
+
+@app.get("/items")
+async def read_item(
+        cookie_id: str | None = Cookie(None),
+        accept_encoding: str | None = Header(None),
+        sec_ch_u: str | None = Header(None),
+        user_agent: str | None = Header(None),
+        x_token: list[str] | None = Header(None)
+):
+    return {"cookie_id": cookie_id,
+            "Accept_Encoding": accept_encoding,
+            "sec-ch-u": sec_ch_u,
+            "User-Agent": user_agent,
+            "X-Token Values": x_token,
+            }
