@@ -1,7 +1,9 @@
 from datetime import datetime, time, timedelta
 from enum import Enum
+from typing import Literal
+
 from fastapi import FastAPI, Query, Path, Body, Cookie, Header
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from uuid import UUID
 
 app = FastAPI()
@@ -269,17 +271,74 @@ app = FastAPI()
 
 # Part 12: Cookie and Header Parameters
 
-@app.get("/items")
-async def read_item(
-        cookie_id: str | None = Cookie(None),
-        accept_encoding: str | None = Header(None),
-        sec_ch_u: str | None = Header(None),
-        user_agent: str | None = Header(None),
-        x_token: list[str] | None = Header(None)
-):
-    return {"cookie_id": cookie_id,
-            "Accept_Encoding": accept_encoding,
-            "sec-ch-u": sec_ch_u,
-            "User-Agent": user_agent,
-            "X-Token Values": x_token,
-            }
+# @app.get("/items")
+# async def read_item(
+#         cookie_id: str | None = Cookie(None),
+#         accept_encoding: str | None = Header(None),
+#         sec_ch_u: str | None = Header(None),
+#         user_agent: str | None = Header(None),
+#         x_token: list[str] | None = Header(None)
+# ):
+#     return {"cookie_id": cookie_id,
+#             "Accept_Encoding": accept_encoding,
+#             "sec-ch-u": sec_ch_u,
+#             "User-Agent": user_agent,
+#             "X-Token Values": x_token,
+#             }
+
+
+# Part 13: Response Model
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float = 10.5
+    tags: list[str] = []
+
+
+items = {
+    "foo": {
+        "name": "Foo", "price": 50.2
+    },
+    "bar": {
+        "name": "Bar", "description": "The description", "price": 62, "tax": 20.2
+    },
+    "baz": {
+        "name": "Baz", "description": None, "price": 50.2, "tax": 10.5, "tags": []
+    },
+}
+
+
+@app.post('/items', response_model=Item, response_model_exclude_unset=True)
+async def create_item(item: Item):
+    return item
+
+
+class UserBase(BaseModel):
+    username: str
+    email: EmailStr
+    full_name: str | None = None
+
+
+class UserIn(UserBase):
+    password: str
+
+
+class UserOut(UserBase):
+    pass
+
+
+@app.post('/user', response_model=UserOut)
+async def create_user(user: UserIn):
+    return user
+
+
+@app.get('/items/{item_id}/name', response_model=Item, response_model_include={'name', 'description'})
+async def read_item_name(item_id: Literal["foo", "bar", "baz"]):
+    return items[item_id]
+
+
+@app.get('/items/{item_id}/public', response_model=Item, response_model_exclude={'tax'})
+async def read_item_public_data(item_id: Literal["foo", "bar", "baz"]):
+    return items[item_id]
