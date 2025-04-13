@@ -2,7 +2,7 @@ from datetime import datetime, time, timedelta
 from enum import Enum
 from typing import Literal, Union
 
-from fastapi import FastAPI, Query, Path, Body, Cookie, Header, status
+from fastapi import FastAPI, Query, Path, Body, Cookie, Header, status, Form
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from uuid import UUID
 
@@ -439,18 +439,35 @@ app = FastAPI()
 
 #  Part 15: Response Status Codes
 
+#
+# @app.post("/items/", status_code=status.HTTP_201_CREATED)
+# async def create_item(name: str):
+#     return {"name", name}
+#
+#
+# @app.delete("/items/{pk}", status_code=status.HTTP_204_NO_CONTENT)
+# async def delete_item(pk: str):
+#     print("pk", pk)
+#     return pk
+#
+#
+# @app.get("/items/", status_code=status.HTTP_301_MOVED_PERMANENTLY)
+# async def read_item_redirect():
+#     return {"hello": "world"}
 
-@app.post("/items/", status_code=status.HTTP_201_CREATED)
-async def create_item(name: str):
-    return {"name", name}
+
+# Part 16: Form Fields
 
 
-@app.delete("/items/{pk}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_item(pk: str):
-    print("pk", pk)
-    return pk
+# Form Field
+@app.post("/login/")
+async def login(username: str = Form(...), password: str = Form(...)):
+    print("password: ", password)
+    return {"username": username}
 
 
-@app.get("/items/", status_code=status.HTTP_301_MOVED_PERMANENTLY)
-async def read_item_redirect():
-    return {"hello": "world"}
+# Json field
+@app.post("/login-json/")
+async def login_json(username: str = Body(...), password: str = Body(...)):
+    print("password: ", password)
+    return {"username": username}
