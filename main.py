@@ -2,7 +2,7 @@ from datetime import datetime, time, timedelta
 from enum import Enum
 from typing import Literal, Union
 
-from fastapi import FastAPI, Query, Path, Body, Cookie, Header, status, Form
+from fastapi import FastAPI, Query, Path, Body, Cookie, Header, status, Form, File, UploadFile
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from uuid import UUID
 
@@ -458,16 +458,27 @@ app = FastAPI()
 
 # Part 16: Form Fields
 
+#
+# # Form Field
+# @app.post("/login/")
+# async def login(username: str = Form(...), password: str = Form(...)):
+#     print("password: ", password)
+#     return {"username": username}
+#
+#
+# # Json field
+# @app.post("/login-json/")
+# async def login_json(username: str = Body(...), password: str = Body(...)):
+#     print("password: ", password)
+#     return {"username": username}
 
-# Form Field
-@app.post("/login/")
-async def login(username: str = Form(...), password: str = Form(...)):
-    print("password: ", password)
-    return {"username": username}
+
+# Part 17: Request Files
+@app.post("/file/")
+async def create_file(files: list[bytes] = File(..., description="a file read as a byte")):
+    return {"file_sizes:": [len(file) for file in files]}
 
 
-# Json field
-@app.post("/login-json/")
-async def login_json(username: str = Body(...), password: str = Body(...)):
-    print("password: ", password)
-    return {"username": username}
+@app.post("/uploadfile/")
+async def create_upload_file(files: list[UploadFile] = File(..., description="a file read as UploadFile")):
+    return {"filename:": [file.filename for file in files]}
