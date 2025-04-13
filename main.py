@@ -2,7 +2,7 @@ from datetime import datetime, time, timedelta
 from enum import Enum
 from typing import Literal, Union
 
-from fastapi import FastAPI, Query, Path, Body, Cookie, Header
+from fastapi import FastAPI, Query, Path, Body, Cookie, Header, status
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from uuid import UUID
 
@@ -347,91 +347,110 @@ app = FastAPI()
 # Part 14: Extra Models
 
 
-class UserBase(BaseModel):
-    username: str
-    email: EmailStr
-    full_name: str | None = None
+# class UserBase(BaseModel):
+#     username: str
+#     email: EmailStr
+#     full_name: str | None = None
+#
+#
+# class UserIn(UserBase):
+#     password: str
+#
+#
+# class UserOut(BaseModel):
+#     pass
+#
+#
+# class UserInDB(UserBase):
+#     hashed_password: str
+#
+#
+# def fake_password_hasher(raw_password: str):
+#     return f"supersecret{raw_password}"
+#
+#
+# def fake_save_user(user_in: UserIn):
+#     hashed_password = fake_password_hasher(user_in.password)
+#     user_in_db = UserInDB(**user_in.dict(), hashed_password=hashed_password)
+#     print(
+#         UserInDB(
+#             username="user.name123",
+#             email="hello@hello.com",
+#             hashed_password="password",
+#             hello="world",
+#             foo="bar"
+#         )
+#     )
+#     print("User Save.")
+#     return user_in_db
+#
+#
+# @app.post("/user/", response_model=UserOut)
+# async def create_user(user_in: UserIn):
+#     user_save = fake_save_user(user_in)
+#     return user_save
+#
+#
+# class BaseItem(BaseModel):
+#     description: str
+#     type: str
+#
+#
+# class CarItem(BaseItem):
+#     type: str = "car"
+#
+#
+# class PlaneItem(BaseItem):
+#     type: str = "Plane"
+#     size: int
+#
+#
+# items = {
+#     "item1": {"description": "All my friends drive a low rider", "type": "car"},
+#     "item2": {"description": "Music is my favorite.", "type": "plane", "size": 5},
+# }
+#
+#
+# @app.get("/items/item_id", response_model=Union[PlaneItem, CarItem])
+# async def read_item(item_id: Literal["item1", "item2"]):
+#     return items[item_id]
+#
+#
+# class ListItem(BaseModel):
+#     name: str
+#     description: str
+#
+#
+# list_items = [
+#     {"name": "Foo", "description": "There comes my hero."},
+#     {"name": "Red", "description": "Its my aeroplanes."},
+# ]
+#
+#
+# @app.get("/list_items/", response_model=list[ListItem])
+# async def read_items():
+#     return list_items
+#
+#
+# @app.get("/arbitrary/", response_model=dict[str, float])
+# async def get_arbitrary():
+#     return {"Foo": 1, "Bar": 2}
 
 
-class UserIn(UserBase):
-    password: str
+#  Part 15: Response Status Codes
 
 
-class UserOut(BaseModel):
-    pass
+@app.post("/items/", status_code=status.HTTP_201_CREATED)
+async def create_item(name: str):
+    return {"name", name}
 
 
-class UserInDB(UserBase):
-    hashed_password: str
+@app.delete("/items/{pk}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_item(pk: str):
+    print("pk", pk)
+    return pk
 
 
-def fake_password_hasher(raw_password: str):
-    return f"supersecret{raw_password}"
-
-
-def fake_save_user(user_in: UserIn):
-    hashed_password = fake_password_hasher(user_in.password)
-    user_in_db = UserInDB(**user_in.dict(), hashed_password=hashed_password)
-    print(
-        UserInDB(
-            username="user.name123",
-            email="hello@hello.com",
-            hashed_password="password",
-            hello="world",
-            foo="bar"
-        )
-    )
-    print("User Save.")
-    return user_in_db
-
-
-@app.post("/user/", response_model=UserOut)
-async def create_user(user_in: UserIn):
-    user_save = fake_save_user(user_in)
-    return user_save
-
-
-class BaseItem(BaseModel):
-    description: str
-    type: str
-
-
-class CarItem(BaseItem):
-    type: str = "car"
-
-
-class PlaneItem(BaseItem):
-    type: str = "Plane"
-    size: int
-
-
-items = {
-    "item1": {"description": "All my friends drive a low rider", "type": "car"},
-    "item2": {"description": "Music is my favorite.", "type": "plane", "size": 5},
-}
-
-
-@app.get("/items/item_id", response_model=Union[PlaneItem, CarItem])
-async def read_item(item_id: Literal["item1", "item2"]):
-    return items[item_id]
-
-
-class ListItem(BaseModel):
-    name: str
-    description: str
-
-
-list_items = [
-    {"name": "Foo", "description": "There comes my hero."},
-    {"name": "Red", "description": "Its my aeroplanes."},
-]
-
-
-@app.get("/list_items/", response_model=list[ListItem])
-async def read_items():
-    return list_items
-
-
-@app.get("/arbitrary/", response_model=dict[str, float])
-async def get_arbitrary():
-    return {"Foo": 1, "Bar": 2}
+@app.get("/items/", status_code=status.HTTP_301_MOVED_PERMANENTLY)
+async def read_item_redirect():
+    return {"hello": "world"}
