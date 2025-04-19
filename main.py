@@ -1,13 +1,15 @@
 from datetime import datetime, time, timedelta
 from enum import Enum
 from typing import Literal, Union
-
-from fastapi import FastAPI, Query, Path, Body, Cookie, Header, status, Form, File, UploadFile
+from fastapi import FastAPI, Query, Path, Body, Cookie, Header, status, Form, File, UploadFile, HTTPException, Request
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from uuid import UUID
+from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.exceptions import ResponseValidationError
+from fastapi.encoders import jsonable_encoder
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 app = FastAPI()
-
 
 # @app.get("/", description="This is our first route")
 # async def root():
@@ -484,10 +486,77 @@ app = FastAPI()
 #     return {"filename:": [file.filename for file in files]}
 
 # Part 18: Request Forms and Files
-@app.post("/files/")
-async def create_files(file: bytes = File(...), fileb: UploadFile = File(...), token: str = Form(...)):
-    return {
-        "file_size": len(file),
-        "token": token,
-        "fileb_content_type": fileb.content_type
-    }
+# @app.post("/files/")
+# async def create_files(file: bytes = File(...), fileb: UploadFile = File(...), token: str = Form(...)):
+#     return {
+#         "file_size": len(file),
+#         "token": token,
+#         "fileb_content_type": fileb.content_type
+#     }
+
+
+# Part 19: Handling Errors
+
+items = {"foo": "The Foo wrestlers"}
+
+
+@app.get("/items/{item_id}")
+async def read_item(item_id: str):
+    if item_id not in items:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item Not Found.", headers={
+            "X-Error": "There are many error."})
+    return {"item": items[item_id]}
+
+
+class UnicornException(Exception):
+    def __init__(self, name: str):
+        self.name = name
+
+
+@app.exception_handler(UnicornException)
+async def unicorn_exception_handler(request: Request, exception: UnicornException):
+    return JSONResponse(
+        status_code=status.HTTP_418_IM_A_TEAPOT,
+        content={"message": f"Oops {exception.name} did something.There goes a Rainbow..."})
+
+
+@app.get("/unicorns/{name}")
+async def read_unicorn(name: str):
+    if name == "yolo":
+        raise UnicornException(name=name)
+    return {"unicorn_name": name}
+
+
+@app.exception_handler(ResponseValidationError)
+async def validations_exception_handler(request, exc):
+    return PlainTextResponse(str(exc), status_code=status.HTTP_400_BAD_REQUEST)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def validations_exception_handler(request, exc):
+    return PlainTextResponse(str(exc.detail), status_code=exc.status_code)
+
+
+@app.get("/validation_item/{item_id}")
+async def read_validation_item(item_id: int):
+    if item_id == 3:
+        raise HTTPException(status_code=status.HTTP_418_IM_A_TEAPOT, detail="Nope I Don't Like 3.")
+    return {"item_id": item_id}
+
+
+@app.exception_handler(ResponseValidationError)
+async def validations_exception_handler(request: Request, exc: ResponseValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=jsonable_encoder({"detail": exc.errors(), "body": exc.body})
+    )
+
+
+class Item(BaseModel):
+    title: str
+    size: int
+
+
+@app.get("/items")
+async def create_item(item: Item):
+    return item
