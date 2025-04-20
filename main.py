@@ -11,6 +11,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 app = FastAPI()
 
+
 # @app.get("/", description="This is our first route")
 # async def root():
 #     return {"message": "Hello World"}
@@ -496,67 +497,113 @@ app = FastAPI()
 
 
 # Part 19: Handling Errors
+#
+# items = {"foo": "The Foo wrestlers"}
+#
+#
+# @app.get("/items/{item_id}")
+# async def read_item(item_id: str):
+#     if item_id not in items:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item Not Found.", headers={
+#             "X-Error": "There are many error."})
+#     return {"item": items[item_id]}
+#
+#
+# class UnicornException(Exception):
+#     def __init__(self, name: str):
+#         self.name = name
+#
+#
+# @app.exception_handler(UnicornException)
+# async def unicorn_exception_handler(request: Request, exception: UnicornException):
+#     return JSONResponse(
+#         status_code=status.HTTP_418_IM_A_TEAPOT,
+#         content={"message": f"Oops {exception.name} did something.There goes a Rainbow..."})
+#
+#
+# @app.get("/unicorns/{name}")
+# async def read_unicorn(name: str):
+#     if name == "yolo":
+#         raise UnicornException(name=name)
+#     return {"unicorn_name": name}
+#
+#
+# @app.exception_handler(ResponseValidationError)
+# async def validations_exception_handler(request, exc):
+#     return PlainTextResponse(str(exc), status_code=status.HTTP_400_BAD_REQUEST)
+#
+#
+# @app.exception_handler(StarletteHTTPException)
+# async def validations_exception_handler(request, exc):
+#     return PlainTextResponse(str(exc.detail), status_code=exc.status_code)
+#
+#
+# @app.get("/validation_item/{item_id}")
+# async def read_validation_item(item_id: int):
+#     if item_id == 3:
+#         raise HTTPException(status_code=status.HTTP_418_IM_A_TEAPOT, detail="Nope I Don't Like 3.")
+#     return {"item_id": item_id}
+#
+#
+# @app.exception_handler(ResponseValidationError)
+# async def validations_exception_handler(request: Request, exc: ResponseValidationError):
+#     return JSONResponse(
+#         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+#         content=jsonable_encoder({"detail": exc.errors(), "body": exc.body})
+#     )
+#
+#
+# class Item(BaseModel):
+#     title: str
+#     size: int
+#
+#
+# @app.get("/items")
+# async def create_item(item: Item):
+#     return item
 
-items = {"foo": "The Foo wrestlers"}
 
-
-@app.get("/items/{item_id}")
-async def read_item(item_id: str):
-    if item_id not in items:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item Not Found.", headers={
-            "X-Error": "There are many error."})
-    return {"item": items[item_id]}
-
-
-class UnicornException(Exception):
-    def __init__(self, name: str):
-        self.name = name
-
-
-@app.exception_handler(UnicornException)
-async def unicorn_exception_handler(request: Request, exception: UnicornException):
-    return JSONResponse(
-        status_code=status.HTTP_418_IM_A_TEAPOT,
-        content={"message": f"Oops {exception.name} did something.There goes a Rainbow..."})
-
-
-@app.get("/unicorns/{name}")
-async def read_unicorn(name: str):
-    if name == "yolo":
-        raise UnicornException(name=name)
-    return {"unicorn_name": name}
-
-
-@app.exception_handler(ResponseValidationError)
-async def validations_exception_handler(request, exc):
-    return PlainTextResponse(str(exc), status_code=status.HTTP_400_BAD_REQUEST)
-
-
-@app.exception_handler(StarletteHTTPException)
-async def validations_exception_handler(request, exc):
-    return PlainTextResponse(str(exc.detail), status_code=exc.status_code)
-
-
-@app.get("/validation_item/{item_id}")
-async def read_validation_item(item_id: int):
-    if item_id == 3:
-        raise HTTPException(status_code=status.HTTP_418_IM_A_TEAPOT, detail="Nope I Don't Like 3.")
-    return {"item_id": item_id}
-
-
-@app.exception_handler(ResponseValidationError)
-async def validations_exception_handler(request: Request, exc: ResponseValidationError):
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=jsonable_encoder({"detail": exc.errors(), "body": exc.body})
-    )
-
+# Part 20: Path Operation Configuration
 
 class Item(BaseModel):
-    title: str
-    size: int
+    name: str
+    description: str
+    price: float
+    tax: float | None = None
+    tags: set[str] = set()
 
 
-@app.get("/items")
+class Tags(Enum):
+    items = "items"
+    users = "users"
+
+
+@app.post("/items/", response_model=Item, status_code=status.HTTP_201_CREATED, tags=[Tags.items],
+          summary="Creat an Item")
+# description="Create an Item with all information: name; description; price; tax; and a set of unique tags")
 async def create_item(item: Item):
+    """
+    Create an Item with all information:
+
+    - **name**: each item have a name
+    - **description**: a long description
+    - **price**: required
+    - **tax**: if the item doesn't have tax, you can omit this
+    - **tags**: a set of unique tags string for this item
+    """
     return item
+
+
+@app.get("/items", tags=[Tags.items])
+async def read_items():
+    return [{"name": "foo", "price": 42}]
+
+
+@app.get("/users", tags=[Tags.users])
+async def read_users():
+    return [{"username": "phoebeBuffy"}]
+
+
+@app.get("/elements/", tags=Tags.items)
+async def read_elements():
+    return [{"item_id": "Foo"}]
