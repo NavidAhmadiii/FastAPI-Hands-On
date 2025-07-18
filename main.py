@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Literal, Union
 from fastapi import FastAPI, Query, Path, Body, Cookie, Header, status, Form, File, UploadFile, HTTPException, Request, \
     Depends
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from uuid import UUID
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -11,7 +12,6 @@ from fastapi.encoders import jsonable_encoder
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 app = FastAPI()
-
 
 # @app.get("/", description="This is our first route")
 # async def root():
@@ -716,28 +716,122 @@ app = FastAPI()
 
 # Part 25: Dependencies in path operation decorators, global dependencies
 
-async def verify_token(x_token: str = Header(...)):
-    if x_token != "fake-suer-secret-token":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Token header invalid")
+# async def verify_token(x_token: str = Header(...)):
+#     if x_token != "fake-suer-secret-token":
+#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Token header invalid")
+#
+#
+# async def verify_key(x_key: str = Header(...)):
+#     if x_key != "fake-suer-secret-key":
+#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-key header invalid")
+#     return x_key
+#
+#
+# @app.get("/items", dependencies=[Depends(verify_token), Depends(verify_key)])
+# async def read_items():
+#     return [
+#         {"item": "foo"},
+#         {"item": ""}
+#     ]
+#
+#
+# @app.get("/users", dependencies=[Depends(verify_token), Depends(verify_key)])
+# async def read_users():
+#     return [
+#         {"username": "Nick"},
+#         {"username": "Morty"},
+#     ]
+
+# Part 26: Security
+
+oauth2_schema = OAuth2PasswordBearer(tokenUrl="token")
+
+fake_user_db = {
+    "john": dict(
+        username="johndoe",
+        full_name="John Doe",
+        email="john@example.com",
+        hashed_passwrd="fakehashedsecret",
+        disabled=False
+    ),
+    "alice": dict(
+        username="alice",
+        full_name="Alice Ahmadi",
+        email="alice@example.com",
+        hashed_passwrd="fakehashedsecret2",
+        disabled=True
+    ),
+}
 
 
-async def verify_key(x_key: str = Header(...)):
-    if x_key != "fake-suer-secret-key":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-key header invalid")
-    return x_key
+def fake_hash_password(password: str):
+    return f"fakehaash{password}"
 
 
-@app.get("/items", dependencies=[Depends(verify_token), Depends(verify_key)])
-async def read_items():
-    return [
-        {"item": "foo"},
-        {"item": ""}
-    ]
+class User(BaseModel):
+    username: str
+    email: str | None = None
+    full_name: str
+    disabled: bool | None = None
 
 
-@app.get("/users", dependencies=[Depends(verify_token), Depends(verify_key)])
-async def read_users():
-    return [
-        {"username": "Nick"},
-        {"username": "Morty"},
-    ]
+class UserInDB(User):
+    hashed_password: str
+
+
+def get_user(db, username: str):
+    if username in db:
+        user_dict = db[username]
+        return UserInDB(**user_dict)
+
+
+def fake_decod_token(token):
+    return get_user(fake_user_db, token)
+
+
+async def get_current_user(token: str = Depends(oauth2_schema)):
+    user = fake_decod_token(token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    return user
+
+
+async def get_current_active_user(current_user: User = Depends(get_current_user)):
+    if current_user.disabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Inactive user"
+        )
+    return current_user
+
+
+@app.post("/token/")
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user_dict = fake_user_db.get(form_data.username)
+    if not user_dict:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="incorrect username or password"
+        )
+    user = UserInDB(**user_dict)
+    hashed_password = fake_hash_password(form_data.password)
+    if not hashed_password == user.hashed_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="incorrect username or password"
+        )
+    return {"access_token": user.username, "token_type": "bearer"}
+
+
+@app.get("/users/me/")
+async def get_me(current_user: User = Depends(get_current_active_user)):
+    return current_user
+
+
+@app.get('/items/')
+async def read_items(token: str = Depends(oauth2_schema)):
+    return {"token": token}
