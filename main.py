@@ -12,8 +12,11 @@ from fastapi.encoders import jsonable_encoder
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from passlib.context import CryptContext
 from jose import JWTError, jwt
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
 
 # @app.get("/", description="This is our first route")
 # async def root():
@@ -840,92 +843,106 @@ app = FastAPI()
 
 
 # Part 27: Security with JWT
+#
+# SECRET_KEY = "thequickbrownfixdoginunitedstate"
+# ALGORITHM = "HS256"
+# ACCESS_TOKEN_EXPIRE_MINUTES = 30
+#
+# fake_users_db = dict(
+#     johndoe=dict(
+#         username="john",
+#         full_name="john doe",
+#         email="johndoe@gmail.com",
+#         hashed_password="",
+#         disable=False
+#     )
+# )
+#
+#
+# class Token(BaseModel):
+#     access_token: str
+#     token_type: str
+#
+#
+# class TokenData(BaseModel):
+#     username: str | None = None
+#
+#
+# class User(BaseModel):
+#     username: str
+#     email: str | None = None
+#     full_name: str | None = None
+#     disable: bool = False
+#
+#
+# class UserInDB(User):
+#     hashed_password: str
+#
+#
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+#
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+#
+#
+# def verify_password(plain_password, hashed_password):
+#     return pwd_context.verify(plain_password, hashed_password)
+#
+#
+# def get_password_hash(password):
+#     return pwd_context.hash(password)
+#
+#
+# def get_user(db, username: str):
+#     if username.db:
+#         user_dict = db[username]
+#         return UserInDB(**user_dict)
+#
+#
+# def authenticate_user(fake_db, username: str, password: str):
+#     user = get_user(fake_db, username)
+#     if not user:
+#         return False
+#     if not verify_password(password, user.hashed_password):
+#         return False
+#     return user
+#
+#
+# def create_access_token(data: dict, expires_delta: timedelta | None = None):
+#     to_encode = data.copy()
+#     if expires_delta:
+#         expire = datetime.utcnow() + expires_delta
+#     else:
+#         expire = datetime.utcnow() + timedelta(minutes=15)
+#     to_encode.update({"exp": expire})
+#     encode_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+#     return encode_jwt
+#
+#
+# @app.post("/token", response_model=Token)
+# async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+#     user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+#     if not user:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Incorrect username or password",
+#             headers={"WWW-Authenticate": "Bearer"}
+#         )
+#     access_token_expire = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+#     access_token = create_access_token(
+#         data={"sub": user.username}, expires_delta=access_token_expire
+#     )
+#     return {"access_token": access_token, "token_type": "Bearer"}
 
-SECRET_KEY = "thequickbrownfixdoginunitedstate"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-fake_users_db = dict(
-    johndoe=dict(
-        username="john",
-        full_name="john doe",
-        email="johndoe@gmail.com",
-        hashed_password="",
-        disable=False
-    )
-)
+# Part 28: Middleware and CORS
+
+class MyMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        response.headers['X-Process-Time'] = str(process_time)
+        return response
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    username: str | None = None
-
-
-class User(BaseModel):
-    username: str
-    email: str | None = None
-    full_name: str | None = None
-    disable: bool = False
-
-
-class UserInDB(User):
-    hashed_password: str
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
-
-
-def get_user(db, username: str):
-    if username.db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
-
-
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
-    if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        return False
-    return user
-
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encode_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encode_jwt
-
-
-@app.post("/token", response_model=Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-    access_token_expire = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expire
-    )
-    return {"access_token": access_token, "token_type": "Bearer"}
+app.middleware(MyMiddleware)
